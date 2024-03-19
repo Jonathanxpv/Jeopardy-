@@ -1,35 +1,33 @@
+
+
 const NUM_CATEGORIES = 6; // Adjust the number as needed
 const NUM_QUESTIONS_PER_CAT = 5; // Adjust the number as needed
-  // Fetch categories outside the loop
 
 $("body").attr("id", "jeopardy");
 
 let categories = [];
 
-
-// Function to get the clues for a category
 async function getCategoryIds(categoryId) {
   try {
-      const response = await axios.get(
-        "https://rithm-jeopardy.herokuapp.com/api/category",
-        {
-          params: {
+    const response = await axios.get(
+      "https://rithm-jeopardy.herokuapp.com/api/category",
+      {
+        params: {
           id: categoryId
         }
       }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching category IDs:", error);
-      return [];
-    }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching category IDs:", error);
+    return [];
+  }
 }
 
-function buildHtmlForClues(clueData){
-  // TODO: build out the HTML for clues here
+async function buildHtmlForClues(clueData) {
+  let $tbody = $("<tbody>");
   if (clueData && Array.isArray(clueData.clues)) {
-    for (const clues of clueData.clues) { // Accessing the 'clues' property
-      console.log(clues);
+    for (const clues of clueData.clues) {
       const $tbodyRow = $("<tr>");
       $tbodyRow.append(`<td>${clues.question}</td>`);
       $tbody.append($tbodyRow);
@@ -37,34 +35,19 @@ function buildHtmlForClues(clueData){
   } else {
     console.error("Invalid clueData structure:", clueData);
   }
-
-{
-  console.error("Error:", error);
+  return $tbody;
 }
 
-
-/** Return object with data about a category:
- *
- *  Returns { title: "Math", clues: clue-array }
- *
- * Where clue-array is:
- *   [
- *      {question: "Hamlet Author", answer: "Shakespeare", showing: null},
- *      {question: "Bell Jar Author", answer: "Plath", showing: null},
- *      ...
- *   ]
- */
-
-// Function to get the categories for a game
-async function getCategories(numOfCategories){
-	
-    try {
-    let results = await axios.get("https://rithm-jeopardy.herokuapp.com/api/categories", {
-      params: {
-        count: (numOfCategories)
+async function getCategories(numOfCategories) {
+  try {
+    let results = await axios.get(
+      "https://rithm-jeopardy.herokuapp.com/api/categories",
+      {
+        params: {
+          count: numOfCategories
+        }
       }
-    })
-      
+    );
     return _.sampleSize(results.data, 6);
   } catch (error) {
     console.error("Error fetching category:", error);
@@ -72,170 +55,184 @@ async function getCategories(numOfCategories){
   }
 }
 
-function buildHtmlForCategories(categoriesData){
-  //TODO: build out HTML for categories here
+async function buildHtmlForCategories(categoriesData) {
+  const $thead = $("<thead>"); // Create thead element
   const $theadRow = $("<tr>");
   for (let category of categoriesData) {
-    let clues =  getCategoryIds(category.id) // This will get your clues for the categories you have
-    console.log(category);
-    console.log(clues);
-    $theadRow.append(`<td>${category.title}</td>`);
-
-    // TODO: we have the clues for a category, but we need to do something with them
-    // TODO: maybe consider a function for adding clues? Who knows
+    $theadRow.append(`<th>${category.title}</th>`);
   }
   $thead.append($theadRow);
+  return $thead; // Return the thead element
+}
+
+function handleClick(evt) {
+  // Toggle the visibility of the clue/question text
+  $(evt.target).find(".clue-text").toggleClass("hidden");
 }
 
 async function fillTable() {
-  const categoriesData = await getCategories(20);}
-  buildHtmlForCategories();
-  buildHtmlForClues();
-  // lets getCategories here
+  const categoriesData = await getCategories(NUM_CATEGORIES);
 
-  // Fill thead with categories
-  // The logic below here is after the category data, build out the HTML to display it
-  // Maybe move to function buildHtmlForCategories(categories)
-  // const $theadRow = $("<tr>");
-  // for (let category of categoriesData) {
-  //   let clues = await getCategoryIds(category.id) // This will get your clues for the categories you have
-  //   console.log(category);
-  //   console.log(clues);
-  //   $theadRow.append(`<td>${category.title}</td>`);
+  // Create the table element
+  const $table = $("<table>");
 
-  //   // TODO: we have the clues for a category, but we need to do something with them
-  //   // TODO: maybe consider a function for adding clues? Who knows
-  // }
-  // $thead.append($theadRow);
- // Since we are getting clues for the categories above, we might not need this here
-    console.log("clueData:", clueData); // Log the clueData to inspect its structure
-    
-    
-    // Check if clueData contains the 'clues' property
-    // The logic below is after you have the clues data, build out the HTML to display it
-    // Maybe move to function buildHtmlForClues(clueData)
-  //   if (clueData && Array.isArray(clueData.clues)) {
-  //     for (const clues of clueData.clues) { // Accessing the 'clues' property
-  //       console.log(clues);
-  //       const $tbodyRow = $("<tr>");
-  //       $tbodyRow.append(`<td>${clues.question}</td>`);
-  //       $tbody.append($tbodyRow);
-  //     }
-  //   } else {
-  //     console.error("Invalid clueData structure:", clueData);
-  //   }
-  // } catch (error) {
-  //   console.error("Error:", error);
-  // }
+  // Create the table body
+  const $tbody = $("<tbody>");
 
+  // Create a row for the category titles
+  const $trCategory = $("<tr>");
+  for (let category of categoriesData) {
+    const $tdCategory = $("<td>").text(category.title);
+    $trCategory.append($tdCategory);
+  }
+  $tbody.append($trCategory);
 
+  // Iterate through each clue index
+  for (let i = 0; i < NUM_QUESTIONS_PER_CAT; i++) {
+    // Create a row for the clue
+    const $tr = $("<tr>");
 
-  // Append thead and tbody to the table
-  $("table").append($thead).append($tbody);
+    // Iterate through each category
+    for (let category of categoriesData) {
+      // Add a cell for the clue in the category
+      const clueData = await getCategoryIds(category.id);
+      const $clueContainer = $("<div>").addClass("clue-container");
+      const $clueText = $("<span>")
+        .addClass("clue-text hidden")
+        .text(clueData.clues[i].question);
+      const $dollarAmount = $("<span>")
+        .addClass("dollar-amount")
+        .text("$" + (i + 1) * 200);
+      $clueContainer.append($clueText).append($dollarAmount);
+      const $tdClue = $("<td>").append($clueContainer);
+      $tr.append($tdClue);
+    }
 
-  // Add event listener for clicking clues
-  $("#jeopardy").on("click", ".clue", handleClick);
+    // Append the row to the tbody
+    $tbody.append($tr);
+  }
 
-  // Append the generated content to the existing table
-  $("#jeopardy").append($thead, $tbody);
+  // Append the table body to the table
+  $table.append($tbody);
 
+  // Add click event handler to toggle clue/question visibility
+  $table.on("click", ".clue-container", function () {
+    $(this).find(".clue-text").toggle("hidden");
+    $(this).find(".dollar-amount").toggle("hidden");
+  });
 
-function handleClick(evt) {
-  const catId = $(evt.target).data("cat");
-  const index = $(evt.target).data("index");
+  // Return the table
+  return $table;
 }
 
-/** Wipe the current Jeopardy board, show the loading spinner,
- * and update the button used to fetch data.
- */
+$("body").on("click", ".dollar-amount", async function (event) {
+  console.log("Clicked on dollar amount");
+  const $cell = $(event.currentTarget).closest("td");
+  const colIndex = $cell.index();
+  const categoriesData = await getCategories(NUM_CATEGORIES);
+  const category = categoriesData[colIndex];
+  if (!category) {
+    console.error("Category not found.");
+    return;
+  }
+  const clueData = await getCategoryIds(category.id);
+  const rowIndex = $(event.currentTarget).closest("tr").index() - 1;
+  const clue = clueData.clues[rowIndex];
+  if (!clue) {
+    console.error("Clue not found.");
+    return;
+  }
+  $(event.currentTarget).siblings(".clue-container").find(".clue-text").text(clue.question).removeClass("hidden");
+  $(event.currentTarget).off("click");
+});
 
-function showLoadingView() {
-  $("#loading-message").html('<i class="fas fa-spinner fa-spin"></i>');
-}
-
-/** Remove the loading spinner and update the button used to fetch data. */
-
-function hideLoadingView() {}
-
-/** Start game:
- *
- * - get random category Ids
- * - get data for each category
- * - create HTML table
- * */
-
-
-/** On click of start / restart button, set up game. */
-async function setupAndStart() {
-  showLoadingView();
-  await fillTable(); 
-  hideLoadingView();
-}
-// TODO
-
-/** On page load, add event handler for clicking clues */
 $(document).ready(function () {
   setupAndStart();
 });
 
+// Define the restartGame function
+async function restartGame() {
+  // Clear the existing table
+  $("#jeopardy").empty();
 
-/**
- * Returns from categories endpoint
- * [
-    {
-        "id": 2,
-        "title": "baseball",
-        "clues_count": 5
-    },
-    {
-        "id": 3,
-        "title": "odd jobs",
-        "clues_count": 5
-    },
-    {
-        "id": 4,
-        "title": "movies",
-        "clues_count": 5
-    }
-]
- * 
- * use id 3 in category endpoint
- * 
- * array of clues objects
- * 
- * clues.data.id
- * clues.data.question
- * clues.data.answer
- * 
- * {
-    "id": 3,
-    "clues": [
-        {
-            "id": 3,
-            "answer": "sold flowers (flower girl accepted)",
-            "question": "Eliza Doolittle did it for a living",
-        },
-        {
-            "id": 9,
-            "answer": "wranglers",
-            "question": "In the Old West they were in charge of horses, on a movie set in charge of chickens",
-        },
-        {
-            "id": 15,
-            "answer": "a bailiff",
-            "question": "He solemnly swears you in, in court",
-        },
-        {
-            "id": 21,
-            "answer": "cartoonists (or animators)",
-            "question": "Ub Iwerks, Friz Freleng & Tex Avery drew the line at this job",
-        },
-        {
-            "id": 5435,
-            "answer": "(air traffic) controller",
-            "question": "Position in airport operations which relies on an echo location receiver",
-        }
-    ]
+  // Call setupAndStart to recreate the game board
+  await setupAndStart();
 }
- * 
-*/}
+
+
+async function setupAndStart() {
+  console.log("Setting up and starting game...");
+// Create the loading screen element dynamically
+const loadingScreen = document.createElement("div");
+loadingScreen.id = "loading-screen";
+loadingScreen.innerHTML = '<div class="spinner"></div>';
+document.body.appendChild(loadingScreen);
+
+// Simulate loading time
+setTimeout(function () {
+  // Hide loading screen
+  loadingScreen.style.display = "none";
+  // Show the Jeopardy game content
+}, 5000); // Adjust the time as needed
+
+  const $table = await fillTable();
+  $("#jeopardy").empty().append($table);
+  const $logoImg = $("<img>");
+  $logoImg.attr("src", "https://1000logos.net/wp-content/uploads/2023/04/Jeopardy-Emblem-768x432.png");
+  $logoImg.attr("alt", "Jeopardy Logo");
+  $logoImg.addClass("game-logo");
+  $("#jeopardy").prepend($logoImg);
+  $("#jeopardy").off("click", "tbody");
+  $("#jeopardy").on("click", "tbody", ".clue-text", async function (event) {
+    console.log("Clicked on clue");
+    const $clueContainer = $(event.target).closest(".clue-container");
+    if ($clueContainer.find(".clue-text").hasClass("hidden")) {
+      return;
+    }
+    const categoryId = $clueContainer.data("category-id");
+    if (!categoryId) {
+      console.error("Invalid category ID");
+      return;
+    }
+    const clueData = await getCategoryIds(categoryId);
+    if (!clueData || !clueData.clues || clueData.clues.length === 0) {
+      console.error("Clue not found or invalid data:", clueData);
+      return;
+    }
+    const dollarAmountText = $clueContainer.find(".dollar-amount").text();
+    const dollarAmount = parseInt(dollarAmountText.slice(1));
+    if (!isNaN(dollarAmount)) {
+      console.log("Clicked on clue with dollar amount:", dollarAmount);
+    } else {
+      console.error("Invalid dollar amount:", dollarAmountText);
+    }
+
+    // Get the answer from the clue data
+    const rowIndex = $clueContainer.closest("tr").index() - 1; // Subtract 1 for the category row
+    const clueAnswer = clueData.clues[rowIndex].answer;
+
+    // Display the answer (e.g., in an alert or modal)
+    alert(`Answer: ${clueAnswer}`);
+
+    // Prevent further clicks on the clue
+    $clueContainer.off("click", ".clue-text");
+  });
+
+  // Create the restart button dynamically
+  const $restartBtn = $("<button>").attr("id", "restartBtn").text("Restart Game");
+  $("body").append($restartBtn);
+
+  // Add event listener to the restart button
+  $restartBtn.on("click", restartGame);
+}
+
+// Define the restartGame function
+async function restartGame() {
+  // Clear the existing table
+  $("#jeopardy").empty();
+
+  // Call setupAndStart to recreate the game board
+  await setupAndStart();
+}
+
+
